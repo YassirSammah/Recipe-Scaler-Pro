@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recipe Scaler Pro</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #2d4059;
+            --secondary-color: #ff5722;
+            --accent-color: #4CAF50;
+            --background: #f8f9fa;
+            --text-color: #2d4059;
+            --border-radius: 8px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            background: var(--background);
+            color: var(--text-color);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+        }
+
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 2rem;
+            text-align: center;
+            font-size: 2.2rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .ingredients-section {
+            margin-bottom: 2rem;
+        }
+
+        .ingredient {
+            display: grid;
+            grid-template-columns: auto 1fr 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
+            padding: 12px;
+            background: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+        }
+
+        .ingredient:hover {
+            border-color: var(--secondary-color);
+        }
+
+        input, select {
+            padding: 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            width: 100%;
+            transition: var(--transition);
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 3px rgba(255, 87, 34, 0.15);
+        }
+
+        button {
+            padding: 12px 24px;
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        button:hover {
+            background: #f4511e;
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 2rem;
+        }
+
+        #results {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: var(--border-radius);
+        }
+
+        .recipe-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            background: var(--background);
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .pdf-button {
+            background: var(--accent-color);
+        }
+
+        .pdf-button:hover {
+            background: #45a049;
+        }
+
+        .adjustment-section {
+            background: var(--background);
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            margin: 2rem 0;
+        }
+
+        .adjustment-section h3 {
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+
+        .adjustment-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1.5rem;
+            }
+
+            .ingredient {
+                grid-template-columns: 1fr;
+            }
+
+            .adjustment-controls {
+                grid-template-columns: 1fr;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            h1 {
+                font-size: 1.8rem;
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* Loading state */
+        .loading {
+            position: relative;
+            pointer-events: none;
+        }
+
+        .loading::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            transform: translate(-50%, -50%);
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>
+            <span>🥘</span>
+            Recipe Scaler Pro
+        </h1>
+        
+        <div class="ingredients-section">
+            <div id="ingredients">
+                <div class="ingredient">
+                    <input type="radio" name="main" class="main-select">
+                    <input type="text" placeholder="Ingredient" class="name">
+                    <input type="number" placeholder="Original Qty" class="quantity">
+                    <select class="unit">
+                        <option value="g">grams (g)</option>
+                        <option value="cup">cups</option>
+                        <option value="tbsp">tbsp</option>
+                        <option value="tsp">tsp</option>
+                    </select>
+                </div>
+            </div>
+            <button onclick="addIngredient()">➕ Add Ingredient</button>
+        </div>
+
+        <div class="adjustment-section">
+            <h3>⚖️ Adjust Main Ingredient</h3>
+            <div class="adjustment-controls">
+                <input type="number" id="newMainQty" placeholder="New quantity">
+                <select id="newMainUnit">
+                    <option value="g">grams (g)</option>
+                    <option value="cup">cups</option>
+                    <option value="tbsp">tbsp</option>
+                    <option value="tsp">tsp</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <button onclick="calculate()">📊 Calculate Recipe</button>
+            <button onclick="downloadPDF()" class="pdf-button" id="pdfButton" disabled>📥 Export to PDF</button>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        // Unit Conversion Table (to grams)
+        const unitToGrams = {
+            'g': 1,
+            'cup': 240,
+            'tbsp': 15,
+            'tsp': 5
+        };
+
+        let currentRecipeData = [];
+
+        function addIngredient() {
+            const ingredientDiv = document.createElement('div');
+            ingredientDiv.className = 'ingredient';
+            ingredientDiv.innerHTML = `
+                <input type="radio" name="main" class="main-select">
+                <input type="text" placeholder="Ingredient" class="name">
+                <input type="number" placeholder="Original Qty" class="quantity">
+                <select class="unit">
+                    <option value="g">grams (g)</option>
+                    <option value="cup">cups</option>
+                    <option value="tbsp">tbsp</option>
+                    <option value="tsp">tsp</option>
+                </select>
+            `;
+            document.getElementById('ingredients').appendChild(ingredientDiv);
+        }
+
+        async function calculate() {
+            const calculateBtn = document.querySelector('[onclick="calculate()"]');
+            try {
+                calculateBtn.classList.add('loading');
+                calculateBtn.disabled = true;
+
+                const mainIngredient = document.querySelector('.main-select:checked');
+                if (!mainIngredient) {
+                    alert("Please select a main ingredient!");
+                    return;
+                }
+
+                const mainRow = mainIngredient.closest('.ingredient');
+                const originalQty = parseFloat(mainRow.querySelector('.quantity').value);
+                const originalUnit = mainRow.querySelector('.unit').value;
+                const newQty = parseFloat(document.getElementById('newMainQty').value);
+                const newUnit = document.getElementById('newMainUnit').value;
+
+                if (isNaN(originalQty) || isNaN(newQty)) {
+                    alert("Please enter valid quantities for the main ingredient.");
+                    return;
+                }
+
+                const originalGrams = originalQty * unitToGrams[originalUnit];
+                const newGrams = newQty * unitToGrams[newUnit];
+                const scalingFactor = newGrams / originalGrams;
+
+                let resultsHTML = '<div class="results-header"><h3>📋 Scaled Recipe</h3></div>';
+                currentRecipeData = [];
+                const ingredients = document.querySelectorAll('.ingredient');
+
+                ingredients.forEach(ingredient => {
+                    const name = ingredient.querySelector('.name').value;
+                    const qty = parseFloat(ingredient.querySelector('.quantity').value);
+                    const unit = ingredient.querySelector('.unit').value;
+
+                    if (!name || isNaN(qty)) return;
+
+                    const scaledQty = (qty * unitToGrams[unit] * scalingFactor) / unitToGrams[unit];
+                    resultsHTML += `
+                        <div class="recipe-item">
+                            <span>${name}</span>
+                            <span>${scaledQty.toFixed(2)} ${unit}</span>
+                        </div>
+                    `;
+
+                    currentRecipeData.push({
+                        name: name,
+                        quantity: scaledQty.toFixed(2),
+                        unit: unit
+                    });
+                });
+
+                document.getElementById('results').innerHTML = resultsHTML;
+                document.getElementById('pdfButton').disabled = false;
+            } finally {
+                calculateBtn.classList.remove('loading');
+                calculateBtn.disabled = false;
+            }
+        }
+
+        function downloadPDF() {
+            if (currentRecipeData.length === 0) {
+                alert("No recipe data to export!");
+                return;
+            }
+
+            const doc = new jspdf.jsPDF();
+            
+            // Header
+            doc.setFillColor(45, 64, 89);
+            doc.rect(0, 0, 210, 40, 'F');
+            doc.setFontSize(18);
+            doc.setTextColor(255, 255, 255);
+            doc.text("Scaled Recipe", 15, 25);
+            
+            // Content
+            doc.setFontSize(12);
+            doc.setTextColor(0, 0, 0);
+            let yPosition = 50;
+            
+            currentRecipeData.forEach((item) => {
+                doc.setFont('helvetica', 'bold');
+                doc.text(`${item.name}:`, 15, yPosition);
+                doc.setFont('helvetica', 'normal');
+                doc.text(`${item.quantity} ${item.unit}`, 60, yPosition);
+                yPosition += 10;
+            });
+
+            // Footer
+            doc.setFontSize(10);
+            doc.setTextColor(100, 100, 100);
+            doc.text("Generated by Recipe Scaler Pro", 15, 280);
+
+            doc.save(`recipe-${new Date().toISOString().slice(0,10)}.pdf`);
+        }
+    </script>
+</body>
+</html>
